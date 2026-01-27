@@ -604,7 +604,7 @@
                 scene.add(sunLight);
 
                 // Strong ambient light for educational mode (brighter for dark planets/moons)
-                const ambientLight = new THREE.AmbientLight(0xbbbbbb); // 73% brightness
+                const ambientLight = new THREE.AmbientLight(0xf2f2f2); // 95% brightness (increased from 73%)
                 scene.add(ambientLight);
             }, () => {
                 // Fallback without texture
@@ -635,8 +635,8 @@
             loadTexture(texturePath, (texture) => {
                 const material = new THREE.MeshStandardMaterial({
                     map: texture,
-                    roughness: 0.7,
-                    metalness: 0.1
+                    roughness: 0.5,  // Reduced from 0.7 for more reflectivity
+                    metalness: 0.2   // Increased from 0.1 for brighter appearance
                 });
 
                 const planetMesh = new THREE.Mesh(geometry, material);
