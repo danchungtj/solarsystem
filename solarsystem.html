@@ -778,7 +778,8 @@
             loadTexture(`textures/moons/${moonName.toLowerCase()}.jpg`, (texture) => {
                 const material = new THREE.MeshStandardMaterial({
                     map: texture,
-                    roughness: 0.9
+                    roughness: 0.6,  // Reduced from 0.9 for brighter appearance
+                    metalness: 0.15  // Added for more reflectivity
                 });
                 const moonMesh = new THREE.Mesh(geometry, material);
                 moonGroup.add(moonMesh);
