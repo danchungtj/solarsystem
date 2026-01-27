@@ -1,134 +1,153 @@
-# 郑源来 Solar System
+# 🌌 QQ Solar System - Interactive Three.js Simulation
 
-An interactive 3D solar system visualization built with Three.js, featuring realistic planetary orbits, moons, asteroid belts, comets, and an asteroid launcher.
+A high-fidelity, educational solar system simulation built with Three.js featuring all 8 planets, 15 major moons, an asteroid belt, and stunning visual effects.
 
-## 🌟 Features
+![Solar System Preview](images/preview.jpg)
 
-- **Realistic Solar System**: All 9 planets (including Pluto) with accurate relative sizes and orbital mechanics
-- **17 Moons**: Major moons of Earth, Mars, Jupiter, Saturn, Uranus, and Neptune
-- **Asteroid Belt**: Thousands of procedurally generated asteroids between Mars and Jupiter
-- **Dynamic Comets**: Orbital comets with sun-oriented tails and fast shooting stars
-- **Interactive Asteroid Launcher**: Fire asteroids from your camera position at any planet
-- **Navigation System**: Dropdown menu to instantly fly to any planet or moon
-- **Time Controls**: Adjust simulation speed, pause, and reset
-- **Realistic Textures**: High-quality NASA textures for planets and moons
-- **Planetary Rings**: Saturn and Uranus with accurate ring systems
-- **Proximity Labels**: Planet information appears when you get close
+## ✨ Features
 
-## 🚀 Live Demo
+### 🪐 Celestial Bodies
+- **8 Planets**: Mercury, Venus, Earth, Mars, Jupiter, Saturn, Uranus, Neptune
+- **15 Major Moons**: 
+  - Jupiter: Europa, Io, Ganymede, Callisto
+  - Saturn: Titan, Enceladus, Rhea, Iapetus
+  - Uranus: Miranda, Ariel, Umbriel, Titania, Oberon
+  - Neptune: Triton
+  - Earth: Moon
+  - Mars: Phobos, Deimos
+- **1000+ Asteroids**: Instanced mesh asteroid belt between Mars and Jupiter
+- **The Sun**: High-resolution texture with lens flare and bloom effects
 
-Visit the live demo: [Solar System on Cloudflare Pages](https://solarsystem.pages.dev)
+### 🎨 Visual Effects
+- ✅ Planetary rings (Saturn, Uranus) with transparency
+- ✅ Atmospheric glow effects (Earth, Jupiter, etc.)
+- ✅ Rotating planet textures with day/night cycles
+- ✅ Moon orbits around parent planets with subtle orbital lines
+- ✅ Asteroid belt rotation with individual rock tumbling
+- ✅ Sun lens flare and bloom effects
+- ✅ 8K starfield background with Milky Way
+- ✅ Educational-mode scaling (logarithmic spacing, exaggerated sizes)
 
-## 🎮 Controls
+### 🎮 Controls
+- **Free Flight**: WASD + Mouse (like a flight simulator)
+- **Click-to-Focus**: Click any planet to auto-fly to it
+- **Time Control**: Speed up or slow down orbital motion
+- **Interactive UI**: Hover over planets for names and facts
 
-- **Left-Click Drag**: Rotate view
-- **Right-Click Drag**: Pan camera
-- **Scroll Wheel**: Zoom in/out
-- **Click Planet**: Fly to planet
-- **Number Keys (1-9)**: Jump to planets (Mercury to Pluto)
-- **🚀 Launch Asteroid**: Fire asteroids from your position
-- **Navigation Dropdown**: Select any planet or moon to fly there
+### ⚡ Performance
+- Optimized for **30-60 FPS** on modern laptops
+- Instanced rendering for 1000+ asteroids
+- Compressed 4K textures for balance between quality and performance
 
-## 🛠️ Technologies
+## 🚀 Quick Start
 
-- **Three.js**: 3D graphics rendering
-- **WebGL**: Hardware-accelerated graphics
-- **Vanilla JavaScript**: No framework dependencies
-- **NASA Textures**: Authentic planetary surface imagery
+### Option 1: Direct Browser (Recommended)
+1. Download or clone this repository
+2. Open `index.html` in a modern web browser (Chrome, Firefox, Edge)
+3. Enjoy exploring the solar system!
 
-## 📦 Installation
-
-1. Clone the repository:
+### Option 2: Local Server
 ```bash
-git clone https://github.com/danchungtj/solarsystem.git
-cd solarsystem
-```
-
-2. Serve the files with any HTTP server:
-```bash
-# Python 3
+# Using Python 3
 python -m http.server 8000
 
-# Node.js
-npx http-server
+# Using Node.js
+npx http-server -p 8000
 ```
 
-3. Open `http://localhost:8000/solarsystem.html` in your browser
+Then navigate to `http://localhost:8000`
 
-## 🌐 Cloudflare Pages Deployment
+## 🌐 Live Demo
 
-This project is configured for automatic deployment on Cloudflare Pages:
-
-1. Connect your GitHub repository to Cloudflare Pages
-2. Build settings:
-   - **Build command**: (leave empty - static site)
-   - **Build output directory**: `/`
-   - **Root directory**: `/`
-3. Deploy!
-
-The site will automatically rebuild on every push to the main branch.
+**Cloudflare Pages**: [https://qq-solar-system.pages.dev](https://qq-solar-system.pages.dev)
 
 ## 📁 Project Structure
 
 ```
-solarsystem/
-├── solarsystem.html          # Main application
-├── textures/                 # Planet and moon textures
-│   ├── planets/             # Planetary surface textures
-│   ├── moons/               # Moon surface textures
-│   └── asteroids/           # Asteroid and explosion textures
-├── README.md                # This file
-└── .gitignore              # Git ignore rules
+QQ Solar System/
+├── index.html              # Main application
+├── textures/               # All planetary textures
+│   ├── planets/           # 8 planet textures (4K)
+│   ├── moons/             # 15 moon textures (2K-4K)
+│   ├── sun/               # Sun texture
+│   ├── rings/             # Saturn and Uranus rings
+│   ├── asteroids/         # Asteroid rock textures
+│   └── backgrounds/       # Starfield and Milky Way (8K)
+├── images/                # UI assets and previews
+└── README.md              # This file
 ```
 
-## 🎨 Features in Detail
+## 🎓 Educational Mode
 
-### Asteroid Launcher
-- Click the 🚀 Launch button to enter targeting mode
-- Click any planet to fire an asteroid from your camera position
-- Asteroids follow ballistic trajectories - if the planet moves, they miss!
-- Impact creates a bright yellow flash on the surface
+This simulation uses **Educational Mode** scaling to make the solar system visually engaging:
 
-### Comets & Shooting Stars
-- Orbital comets with tails that always point away from the Sun
-- 20+ fast shooting stars with motion-based tails
-- Realistic tail brightness based on solar proximity
+- **Logarithmic Spacing**: Planets are closer together than in reality
+- **Exaggerated Sizes**: Planets are larger for visibility
+- **Accelerated Orbits**: Orbital motion is visible within 30 seconds
 
-### Time Control
-- Adjust simulation speed from 0.1x to 10x
-- Pause to examine the system
-- Reset to default view
+This approach balances scientific accuracy with visual engagement, perfect for demonstrations and learning.
 
-## 🔧 Customization
+## 🛠️ Technologies
 
-Edit `solarsystem.html` to customize:
-- Planetary sizes and distances (search for `PLANETS` array)
-- Moon configurations (`MOON_DATA` object)
-- Simulation speed (`CONFIG.educational.timeScale`)
-- Visual effects and colors
+- **Three.js** (r168): 3D rendering engine
+- **Vanilla JavaScript**: No build tools required
+- **WebGL**: Hardware-accelerated graphics
+- **100% Portable**: Single HTML file + textures folder
+
+## 📸 Screenshots
+
+### Full Solar System View
+![Full View](images/full_view.jpg)
+
+### Saturn Close-up
+![Saturn](images/saturn_closeup.jpg)
+
+### Asteroid Belt
+![Asteroid Belt](images/asteroid_belt.jpg)
+
+## 🎯 Controls Reference
+
+| Action | Control |
+|--------|---------|
+| Move Forward | `W` |
+| Move Backward | `S` |
+| Move Left | `A` |
+| Move Right | `D` |
+| Look Around | Mouse Movement |
+| Focus Planet | Left Click on Planet |
+| Speed Up Time | Time Slider → Right |
+| Slow Down Time | Time Slider → Left |
+| Pause/Resume | `Space` |
+
+## 🌟 Texture Credits
+
+All textures sourced from:
+- **Solar System Scope** (CC BY 4.0): Planet and moon textures
+- **NASA JPL**: Scientific moon maps (Europa, Titan, etc.)
+- **Planet Pixel Emporium**: Ring textures
+
+See `texture_resources.md` for detailed attribution.
 
 ## 📝 License
 
-MIT License - feel free to use and modify!
-
-## 🙏 Credits
-
-- Planetary textures: NASA/JPL
-- Three.js library: Three.js authors
-- Created by: Dan Chung
-
-## 🐛 Known Issues
-
-- Performance may vary on older devices
-- Some textures may take time to load on slower connections
+This project is open source and available under the MIT License.
 
 ## 🤝 Contributing
 
 Contributions are welcome! Feel free to:
 - Report bugs
-- Suggest features
+- Suggest new features
 - Submit pull requests
+
+## 👨‍💻 Author
+
+**QQ** - Educational Three.js Simulations
+
+## 🔗 Related Projects
+
+- [CPP Solar System](../CPP%20Solarsystem/) - Native C++/OpenGL version
+- More simulations at [AI Class Portfolio](https://your-portfolio-url.com)
 
 ---
 
-**Enjoy exploring the solar system!** 🌍🪐✨
+**Made with ❤️ using Three.js**
