@@ -279,14 +279,11 @@
                 <span id="time-value" style="min-width: 45px; font-size: 13px;">0.3x</span>
                 <button id="pause-btn" class="btn" style="padding: 5px 10px; font-size: 11px;">⏸️ Pause</button>
                 <button id="reset-btn" class="btn" style="padding: 5px 10px; font-size: 11px;">🔄 Reset</button>
-                <button id="asteroid-btn" class="btn"
-                    style="background: rgba(200, 50, 50, 0.8); padding: 5px 10px; font-size: 11px;">🚀 Launch</button>
             </div>
 
             <!-- Row 2: Navigation dropdown full width -->
             <div class="control-row" style="margin-bottom: 0;">
-                <select id="nav-select"
-                    style="width: 100%; padding: 6px; background: rgba(0,0,0,0.7); color: white; border: 1px solid rgba(255,255,255,0.3); border-radius: 4px; cursor: pointer; font-size: 12px;">
+                <select id="nav-select">
                     <option value="">Select Planet or Moon...</option>
                     <optgroup label="☀️ Sun">
                         <option value="sun">Sun</option>
@@ -335,6 +332,15 @@
                     <optgroup label="♇ Pluto">
                         <option value="pluto">Pluto</option>
                     </optgroup>
+                    <optgroup label="☄️ Kuiper Belt">
+                        <option value="kuiper">Kuiper Belt</option>
+                    </optgroup>
+                    <optgroup label="🌐 Planet QQ">
+                        <option value="planetqq">Planet QQ</option>
+                    </optgroup>
+                    <optgroup label="🕳️ Black Hole">
+                        <option value="blackhole">Black Hole</option>
+                    </optgroup>
                 </select>
             </div>
         </div>
@@ -352,11 +358,13 @@
         <div id="instructions">
             <h3>🎮 Controls</h3>
             <ul>
+                <li><kbd>W/A/S/D</kbd> Fly Camera (Forward/Left/Back/Right)</li>
+                <li><kbd>Space</kbd> Fly Up | <kbd>Shift</kbd> Fly Down/Boost</li>
                 <li><kbd>Left-Click Drag</kbd> Rotate View</li>
                 <li><kbd>Right-Click Drag</kbd> Pan Camera</li>
                 <li><kbd>Scroll Wheel</kbd> Zoom In/Out</li>
                 <li><kbd>Click Planet</kbd> Fly To Planet</li>
-                <li><kbd>1-9</kbd> Jump to Planets</li>
+                <li><kbd>1-9</kbd> Jump to Planets | <kbd>0</kbd> Planet QQ | <kbd>-</kbd> Black Hole</li>
                 <li>Planet labels appear when close!</li>
             </ul>
         </div>
@@ -408,7 +416,7 @@
 
         // Planetary data with more accurate relative sizes and spacing
         const PLANETS = [
-            { name: 'Mercury', radius: 1.8, distance: 120, orbit: 88, rotation: 58, color: 0x8c8c8c, moons: [] },
+            { name: 'Mercury', radius: 1.8, distance: 144, orbit: 88, rotation: 58, color: 0x8c8c8c, moons: [] },
             { name: 'Venus', radius: 4.2, distance: 180, orbit: 225, rotation: 243, color: 0xffc649, moons: [] },
             { name: 'Earth', radius: 4.5, distance: 240, orbit: 365, rotation: 1, color: 0x4169e1, moons: ['Moon'] },
             { name: 'Mars', radius: 2.5, distance: 315, orbit: 687, rotation: 1.03, color: 0xcd5c5c, moons: ['Phobos', 'Deimos'] },
@@ -416,7 +424,8 @@
             { name: 'Saturn', radius: 32, distance: 900, orbit: 10759, rotation: 0.45, color: 0xf4a460, moons: ['Titan', 'Enceladus', 'Rhea', 'Iapetus'], hasRings: true },
             { name: 'Uranus', radius: 18, distance: 1200, orbit: 30687, rotation: 0.72, color: 0x4fd0e0, moons: ['Miranda', 'Ariel', 'Umbriel', 'Titania', 'Oberon'], hasRings: true, ringTilt: 'vertical' },
             { name: 'Neptune', radius: 17, distance: 1500, orbit: 60190, rotation: 0.67, color: 0x4169e1, moons: ['Triton'] },
-            { name: 'Pluto', radius: 3.6, distance: 1800, orbit: 90560, rotation: 6.39, color: 0xc4a582, moons: [] }
+            { name: 'Pluto', radius: 3.6, distance: 1860, orbit: 90560, rotation: 6.39, color: 0xc4a582, moons: [] },
+            { name: 'Planet QQ', radius: 18, distance: 2760, orbit: 120000, rotation: 0.8, color: 0x8888ff, moons: [] }
         ];
 
         // Moon orbital data (relative to parent planet) - Larger sizes for visibility
@@ -442,7 +451,7 @@
 
         // ==================== SCENE SETUP ====================
         let scene, camera, renderer, composer, controls;
-        let sun, planets = [], moons = [], asteroidBelt;
+        let sun, planets = [], moons = [], asteroidBelt, kuiperBelt;
         let celestialObjects = []; // For raycasting
         let comets = []; // Comets with tails
         let shootingStars = []; // Fast meteors
@@ -453,6 +462,41 @@
         let asteroidMode = false; // Targeting mode for asteroid launcher
         let activeAsteroids = []; // Active asteroid projectiles
         let explosions = []; // Explosion effects
+
+        // WASD flight controls
+        let keyStates = {
+            w: false,
+            a: false,
+            s: false,
+            d: false,
+            shift: false,
+            space: false
+        };
+        const moveSpeed = 5.0; // Base movement speed
+        const boostMultiplier = 3.0; // Speed boost when holding Shift
+
+        // Black hole configuration and state
+        const BH_CONFIG = {
+            G: 1.0,
+            M: 1.0,
+            c: 1.0,
+            diskInner: 2.5,  // Smaller gap between event horizon and disk
+            diskOuter: 5.95,  // 50% narrower (was 11.9)
+            particleCount: 15000,  // Much denser disk
+            particleSize: 0.25,  // Larger particles
+            position: new THREE.Vector3(11040, 0, 0),  // 4× Planet QQ distance
+            scale: 800,  // 10x larger for visibility
+            beamingPower: 1.9,
+            diskTiltDeg: 20  // Tilted 20 degrees
+        };
+        let blackHoleParticles, blackHoleSphere, photonRing, photonGlow;
+        let bhParticleState, bhParticleVel;
+
+        // Meteorite system for black hole accretion
+        const meteorites = [];
+        let lastMeteoriteSpawn = 0;
+        const METEORITE_SPAWN_INTERVAL = 1000; // 1 second
+        const METEORITES_PER_SPAWN = 1; // Spawn 1 meteorite every second
 
         // Performance monitoring
         let frameCount = 0;
@@ -537,11 +581,17 @@
             // Create Asteroid Belt
             createAsteroidBelt();
 
+            // Create Kuiper Belt
+            createKuiperBelt();
+
             // Create Comets
             createComets();
 
             // Create Shooting Stars
             createShootingStars();
+
+            // Create Black Hole
+            createBlackHole();
 
             // Once all loaded, hide loading screen
             checkLoadingComplete();
@@ -631,6 +681,7 @@
             let texturePath = `textures/planets/${planetData.name.toLowerCase()}.jpg`;
             if (planetData.name === 'Earth') texturePath = 'textures/planets/earth_daymap.jpg';
             if (planetData.name === 'Venus') texturePath = 'textures/planets/venus_surface.jpg';
+            if (planetData.name === 'Planet QQ') texturePath = 'textures/planets/qq.jpg';
 
             loadTexture(texturePath, (texture) => {
                 const material = new THREE.MeshStandardMaterial({
@@ -901,6 +952,52 @@
             scene.add(asteroidBelt);
         }
 
+        function createKuiperBelt() {
+            const asteroidGeometry = new THREE.IcosahedronGeometry(1.5, 0);  // 3x larger (was 0.5)
+            const asteroidMaterial = new THREE.MeshStandardMaterial({
+                color: 0xaabbcc,      // Slightly bluish-grey for distinction
+                emissive: 0x556677,   // Cooler glow
+                roughness: 0.9,
+                metalness: 0.1
+            });
+
+            kuiperBelt = new THREE.InstancedMesh(
+                asteroidGeometry,
+                asteroidMaterial,
+                CONFIG.educational.asteroidCount * 4.5  // 3x more objects (was 1.5x)
+            );
+
+            const dummy = new THREE.Object3D();
+            const minDist = 1550; // Just beyond Neptune (1500)
+            const maxDist = 1820; // Just before Pluto (1860)
+
+            for (let i = 0; i < CONFIG.educational.asteroidCount * 4.5; i++) {
+                const angle = Math.random() * Math.PI * 2;
+                const distance = minDist + Math.random() * (maxDist - minDist);
+                const height = (Math.random() - 0.5) * 15; // Slightly thicker belt
+
+                dummy.position.set(
+                    Math.cos(angle) * distance,
+                    height,
+                    Math.sin(angle) * distance
+                );
+
+                dummy.rotation.set(
+                    Math.random() * Math.PI,
+                    Math.random() * Math.PI,
+                    Math.random() * Math.PI
+                );
+
+                const scale = 0.3 + Math.random() * 1.2;
+                dummy.scale.set(scale, scale, scale);
+
+                dummy.updateMatrix();
+                kuiperBelt.setMatrixAt(i, dummy.matrix);
+            }
+
+            scene.add(kuiperBelt);
+        }
+
         function createComets() {
             const cometCount = 3 + Math.floor(Math.random() * 3); // 3-5 comets
 
@@ -1005,6 +1102,315 @@
             }
         }
 
+        // ==================== BLACK HOLE CREATION ====================
+        function createBlackHole() {
+            const rs = 2 * BH_CONFIG.G * BH_CONFIG.M / (BH_CONFIG.c * BH_CONFIG.c);
+            const rIn = BH_CONFIG.diskInner * rs;
+            const rOut = BH_CONFIG.diskOuter * rs;
+            const N = BH_CONFIG.particleCount;
+
+            // Create event horizon sphere (70% smaller than before)
+            const bhGeometry = new THREE.SphereGeometry(rs * BH_CONFIG.scale * 0.018, 32, 16);
+            const bhMaterial = new THREE.MeshBasicMaterial({ color: 0x000000 });
+            blackHoleSphere = new THREE.Mesh(bhGeometry, bhMaterial);
+            blackHoleSphere.position.copy(BH_CONFIG.position);
+            scene.add(blackHoleSphere);
+
+            // Photon ring and glow removed - too large and potentially confusing for students
+
+
+            // Initialize particle disk
+            const positions = new Float32Array(N * 3);
+            const colors = new Float32Array(N * 3);
+            bhParticleState = new Float32Array(N * 3);
+            bhParticleVel = new Float32Array(N * 3);
+
+            for (let i = 0; i < N; i++) {
+                const j = i * 3;
+                // Bias distribution toward inner radius (more dense near black hole)
+                const u = Math.pow(Math.random(), 2.5);  // Power law distribution
+                const r = Math.sqrt((1 - u) * rIn * rIn + u * rOut * rOut);
+                const ang = Math.random() * Math.PI * 2;
+                const x = r * Math.cos(ang);
+                const z = r * Math.sin(ang);
+                const y = (Math.random() - 0.5) * 0.02 * r;
+
+                bhParticleState[j + 0] = x;
+                bhParticleState[j + 1] = y;
+                bhParticleState[j + 2] = z;
+
+                // Keplerian velocity
+                const vphi = Math.sqrt(BH_CONFIG.G * BH_CONFIG.M * r) / (r - rs);
+                bhParticleVel[j + 0] = -vphi * Math.sin(ang);
+                bhParticleVel[j + 1] = 0;
+                bhParticleVel[j + 2] = vphi * Math.cos(ang);
+
+                // Apply scale and position
+                const scl = BH_CONFIG.scale * 0.02;
+                positions[j + 0] = x * scl + BH_CONFIG.position.x;
+                positions[j + 1] = y * scl + BH_CONFIG.position.y;
+                positions[j + 2] = z * scl + BH_CONFIG.position.z;
+
+                // Color gradient with radial fade: inner bright, outer fades
+                const t = (r - rIn) / (rOut - rIn);
+                const fadeOpacity = 1.0 - t * 0.8;  // Inner = 1.0, outer = 0.2
+                const inner = 0xFFF1D4, outer = 0x8B5A3C;
+                const r1 = (inner >> 16) & 255, g1 = (inner >> 8) & 255, b1 = inner & 255;
+                const r2 = (outer >> 16) & 255, g2 = (outer >> 8) & 255, b2 = outer & 255;
+                colors[j + 0] = ((r1 + (r2 - r1) * t) / 255) * fadeOpacity;
+                colors[j + 1] = ((g1 + (g2 - g1) * t) / 255) * fadeOpacity;
+                colors[j + 2] = ((b1 + (b2 - b1) * t) / 255) * fadeOpacity;
+            }
+
+            const particleGeometry = new THREE.BufferGeometry();
+            particleGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3).setUsage(THREE.DynamicDrawUsage));
+            particleGeometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+
+            const particleMaterial = new THREE.PointsMaterial({
+                size: BH_CONFIG.particleSize,
+                vertexColors: true,
+                transparent: true,
+                opacity: 1.0,
+                blending: THREE.AdditiveBlending,
+                depthTest: true,
+                depthWrite: true
+            });
+
+            blackHoleParticles = new THREE.Points(particleGeometry, particleMaterial);
+            blackHoleParticles.renderOrder = 1;
+            scene.add(blackHoleParticles);
+        }
+
+        // ==================== BLACK HOLE PHYSICS UPDATE ====================
+        function updateBlackHole() {
+            if (!blackHoleParticles || !bhParticleState || !bhParticleVel) return;
+
+            const positions = blackHoleParticles.geometry.attributes.position.array;
+            const colors = blackHoleParticles.geometry.attributes.color.array;
+            const N = bhParticleState.length / 3;
+            const rs = 2 * BH_CONFIG.G * BH_CONFIG.M / (BH_CONFIG.c * BH_CONFIG.c);
+            const dt = 0.0045 * 20.0 * 5.2 * timeScale; // 30% faster (was 4.0, now 5.2)
+            const scl = BH_CONFIG.scale * 0.02;
+
+            for (let i = 0; i < N; i++) {
+                const j = i * 3;
+
+                // Current position and acceleration
+                const rx = bhParticleState[j + 0];
+                const ry = bhParticleState[j + 1];
+                const rz = bhParticleState[j + 2];
+                const r = Math.sqrt(rx * rx + ry * ry + rz * rz);
+
+                if (r <= rs * 1.05 || !isFinite(r)) {
+                    // Respawn particle in disk
+                    const rIn = BH_CONFIG.diskInner * rs;
+                    const rOut = BH_CONFIG.diskOuter * rs;
+                    const u = Math.random();
+                    const rNew = Math.sqrt((1 - u) * rIn * rIn + u * rOut * rOut);
+                    const ang = Math.random() * Math.PI * 2;
+                    bhParticleState[j + 0] = rNew * Math.cos(ang);
+                    bhParticleState[j + 1] = (Math.random() - 0.5) * 0.02 * rNew;
+                    bhParticleState[j + 2] = rNew * Math.sin(ang);
+                    const vphi = Math.sqrt(BH_CONFIG.G * BH_CONFIG.M * rNew) / (rNew - rs);
+                    bhParticleVel[j + 0] = -vphi * Math.sin(ang);
+                    bhParticleVel[j + 1] = 0;
+                    bhParticleVel[j + 2] = vphi * Math.cos(ang);
+                    continue;
+                }
+
+                const aMag = BH_CONFIG.G * BH_CONFIG.M / ((r - rs) * (r - rs));
+                const ux = rx / r, uy = ry / r, uz = rz / r;
+
+                // Velocity Verlet: half-step velocity
+                bhParticleVel[j + 0] += -aMag * ux * dt * 0.5;
+                bhParticleVel[j + 1] += -aMag * uy * dt * 0.5;
+                bhParticleVel[j + 2] += -aMag * uz * dt * 0.5;
+
+                // Position update
+                bhParticleState[j + 0] += bhParticleVel[j + 0] * dt;
+                bhParticleState[j + 1] += bhParticleVel[j + 1] * dt;
+                bhParticleState[j + 2] += bhParticleVel[j + 2] * dt;
+
+                // New acceleration
+                const r2x = bhParticleState[j + 0];
+                const r2y = bhParticleState[j + 1];
+                const r2z = bhParticleState[j + 2];
+                const r2 = Math.sqrt(r2x * r2x + r2y * r2y + r2z * r2z);
+                const aMag2 = BH_CONFIG.G * BH_CONFIG.M / ((r2 - rs) * (r2 - rs));
+                const ux2 = r2x / r2, uy2 = r2y / r2, uz2 = r2z / r2;
+
+                // Velocity second half-step
+                bhParticleVel[j + 0] += -aMag2 * ux2 * dt * 0.5;
+                bhParticleVel[j + 1] += -aMag2 * uy2 * dt * 0.5;
+                bhParticleVel[j + 2] += -aMag2 * uz2 * dt * 0.5;
+
+                // Update rendered positions with tilt
+                const xw = bhParticleState[j + 0] * scl;
+                const yw = bhParticleState[j + 1] * scl;
+                const zw = bhParticleState[j + 2] * scl;
+                const th = BH_CONFIG.diskTiltDeg * Math.PI / 180;
+                const cy = Math.cos(th), sy = Math.sin(th);
+                const y2 = cy * yw - sy * zw;
+                const z2 = sy * yw + cy * zw;
+                positions[j + 0] = xw + BH_CONFIG.position.x;
+                positions[j + 1] = y2 + BH_CONFIG.position.y;
+                positions[j + 2] = z2 + BH_CONFIG.position.z;
+
+                // Relativistic beaming for brightness
+                const vx = bhParticleVel[j + 0], vy = bhParticleVel[j + 1], vz = bhParticleVel[j + 2];
+                const vmag = Math.sqrt(vx * vx + vy * vy + vz * vz);
+                const beta = Math.min(0.99, vmag / BH_CONFIG.c);
+                const vhatx = vx / (vmag || 1e-9), vhaty = vy / (vmag || 1e-9), vhatz = vz / (vmag || 1e-9);
+
+                const dx = camera.position.x - positions[j + 0];
+                const dy = camera.position.y - positions[j + 1];
+                const dz = camera.position.z - positions[j + 2];
+                const dn = Math.sqrt(dx * dx + dy * dy + dz * dz) || 1e-9;
+                const cosT = (vhatx * dx + vhaty * dy + vhatz * dz) / dn;
+
+                const D = 1.0 / Math.max(0.05, (1.0 - beta * cosT));
+                const boost = Math.min(6.0, Math.max(0.4, Math.pow(D, BH_CONFIG.beamingPower)));
+
+                // Apply boost to base color with radial fade
+                const rIn = BH_CONFIG.diskInner * rs;
+                const rOut = BH_CONFIG.diskOuter * rs;
+                const t = Math.min(1, Math.max(0, (r2 - rIn) / (rOut - rIn)));
+
+                // Inner particles glow brighter, outer fade to oblivion
+                const fadeOpacity = 1.0 - t * 0.8;  // Inner = 1.0, outer = 0.2
+                const innerBoost = 1.0 + (1.0 - t) * 0.5;  // Inner particles 1.5x brighter
+
+                const inner = 0xFFF1D4, outer = 0x8B5A3C;
+                const r1 = (inner >> 16) & 255, g1 = (inner >> 8) & 255, b1 = inner & 255;
+                const r2c = (outer >> 16) & 255, g2 = (outer >> 8) & 255, b2 = outer & 255;
+                colors[j + 0] = Math.min(1, ((r1 + (r2c - r1) * t) / 255) * boost * fadeOpacity * innerBoost);
+                colors[j + 1] = Math.min(1, ((g1 + (g2 - g1) * t) / 255) * boost * fadeOpacity * innerBoost);
+                colors[j + 2] = Math.min(1, ((b1 + (b2 - b1) * t) / 255) * boost * fadeOpacity * innerBoost);
+            }
+
+            blackHoleParticles.geometry.attributes.position.needsUpdate = true;
+            blackHoleParticles.geometry.attributes.color.needsUpdate = true;
+        }
+
+        // ==================== METEORITE SYSTEM ====================
+        function spawnMeteorite() {
+            const rs = 2 * BH_CONFIG.G * BH_CONFIG.M / (BH_CONFIG.c * BH_CONFIG.c);
+            const spawnDistance = BH_CONFIG.diskOuter * rs * 3; // Spawn outside the disk
+
+            // Random position around black hole
+            const theta = Math.random() * Math.PI * 2;
+            const phi = (Math.random() - 0.5) * Math.PI * 0.5; // Some vertical variation
+
+            const x = spawnDistance * Math.cos(theta) * Math.cos(phi);
+            const y = spawnDistance * Math.sin(phi);
+            const z = spawnDistance * Math.sin(theta) * Math.cos(phi);
+
+            // Create meteorite mesh (4x particle size = 1.0)
+            const geometry = new THREE.SphereGeometry(1.0, 8, 8);
+            const material = new THREE.MeshBasicMaterial({
+                color: 0xFF6B35, // Orange-red color
+                emissive: 0xFF4500,
+                emissiveIntensity: 0.8
+            });
+            const mesh = new THREE.Mesh(geometry, material);
+
+            const scl = BH_CONFIG.scale * 0.02;
+            mesh.position.set(
+                x * scl + BH_CONFIG.position.x,
+                y * scl + BH_CONFIG.position.y,
+                z * scl + BH_CONFIG.position.z
+            );
+
+            scene.add(mesh);
+
+            // Create light trail
+            const trailLength = 20;
+            const trailPositions = new Float32Array(trailLength * 3);
+            for (let i = 0; i < trailLength; i++) {
+                trailPositions[i * 3 + 0] = mesh.position.x;
+                trailPositions[i * 3 + 1] = mesh.position.y;
+                trailPositions[i * 3 + 2] = mesh.position.z;
+            }
+            const trailGeometry = new THREE.BufferGeometry();
+            trailGeometry.setAttribute('position', new THREE.BufferAttribute(trailPositions, 3));
+            const trailMaterial = new THREE.LineBasicMaterial({
+                color: 0xFF6B35,
+                transparent: true,
+                opacity: 0.6
+            });
+            const trail = new THREE.Line(trailGeometry, trailMaterial);
+            scene.add(trail);
+
+            meteorites.push({
+                mesh: mesh,
+                trail: trail,
+                trailPositions: trailPositions,
+                trailIndex: 0,
+                localPos: { x, y, z }, // Position relative to black hole center
+                velocity: { x: 0, y: 0, z: 0 },
+                lifetime: 0
+            });
+        }
+
+        function updateMeteorites(deltaTime) {
+            const rs = 2 * BH_CONFIG.G * BH_CONFIG.M / (BH_CONFIG.c * BH_CONFIG.c);
+            const scl = BH_CONFIG.scale * 0.02;
+
+            for (let i = meteorites.length - 1; i >= 0; i--) {
+                const met = meteorites[i];
+                met.lifetime += deltaTime;
+
+                // Calculate distance from black hole center
+                const r = Math.sqrt(met.localPos.x ** 2 + met.localPos.y ** 2 + met.localPos.z ** 2);
+
+                // Remove if reached event horizon or too old
+                if (r <= rs * 1.1 || met.lifetime > 30) {
+                    scene.remove(met.mesh);
+                    scene.remove(met.trail);
+                    met.mesh.geometry.dispose();
+                    met.mesh.material.dispose();
+                    met.trail.geometry.dispose();
+                    met.trail.material.dispose();
+                    meteorites.splice(i, 1);
+                    continue;
+                }
+
+                // Gravitational acceleration toward black hole
+                const aMag = BH_CONFIG.G * BH_CONFIG.M / ((r - rs) ** 2);
+                const ux = -met.localPos.x / r;
+                const uy = -met.localPos.y / r;
+                const uz = -met.localPos.z / r;
+
+                // Update velocity (50x multiplier for visible motion)
+                met.velocity.x += aMag * ux * deltaTime * 50;
+                met.velocity.y += aMag * uy * deltaTime * 50;
+                met.velocity.z += aMag * uz * deltaTime * 50;
+
+                // Update position
+                met.localPos.x += met.velocity.x * deltaTime;
+                met.localPos.y += met.velocity.y * deltaTime;
+                met.localPos.z += met.velocity.z * deltaTime;
+
+                // Update mesh position
+                met.mesh.position.set(
+                    met.localPos.x * scl + BH_CONFIG.position.x,
+                    met.localPos.y * scl + BH_CONFIG.position.y,
+                    met.localPos.z * scl + BH_CONFIG.position.z
+                );
+
+                // Update trail
+                met.trailIndex = (met.trailIndex + 1) % (met.trailPositions.length / 3);
+                met.trailPositions[met.trailIndex * 3 + 0] = met.mesh.position.x;
+                met.trailPositions[met.trailIndex * 3 + 1] = met.mesh.position.y;
+                met.trailPositions[met.trailIndex * 3 + 2] = met.mesh.position.z;
+                met.trail.geometry.attributes.position.needsUpdate = true;
+
+                // Brighten as it gets closer (heating up)
+                const brightness = Math.min(2.0, 1.0 + (1.0 - r / (BH_CONFIG.diskOuter * rs * 3)));
+                met.mesh.material.emissiveIntensity = 0.8 * brightness;
+            }
+        }
+
         // ==================== ANIMATION & UPDATES ====================
         function animate() {
             requestAnimationFrame(animate);
@@ -1040,6 +1446,26 @@
                 if (asteroidBelt) {
                     asteroidBelt.rotation.y += 0.0001 * timeScale;
                 }
+
+                // Rotate Kuiper belt slightly (slower than asteroid belt)
+                if (kuiperBelt) {
+                    kuiperBelt.rotation.y += 0.00005 * timeScale;
+                }
+
+                // Update black hole physics
+                updateBlackHole();
+
+                // Spawn meteorites periodically (every 10 seconds)
+                const currentTime = Date.now();
+                if (currentTime - lastMeteoriteSpawn > METEORITE_SPAWN_INTERVAL) {
+                    for (let i = 0; i < METEORITES_PER_SPAWN; i++) {
+                        spawnMeteorite();
+                    }
+                    lastMeteoriteSpawn = currentTime;
+                }
+
+                // Update meteorites
+                updateMeteorites(deltaTime * timeScale);
 
                 // Update comets
                 comets.forEach(comet => {
@@ -1121,6 +1547,9 @@
                         );
                     }
                 });
+
+                // Update camera position based on WASD input
+                updateCameraMovement();
 
                 // Update active asteroids
                 activeAsteroids.forEach((asteroid, index) => {
@@ -1284,7 +1713,9 @@
         }
 
         function updateObjectCount() {
-            const total = 1 + planets.length + moons.length + (asteroidBelt ? CONFIG.educational.asteroidCount : 0);
+            const total = 1 + planets.length + moons.length +
+                (asteroidBelt ? CONFIG.educational.asteroidCount : 0) +
+                (kuiperBelt ? CONFIG.educational.asteroidCount * 4.5 : 0);
             document.getElementById('objects').textContent = total;
         }
 
@@ -1310,10 +1741,55 @@
             });
         }
 
+        // ==================== CAMERA MOVEMENT ====================
+        function updateCameraMovement() {
+            if (!keyStates.w && !keyStates.a && !keyStates.s && !keyStates.d && !keyStates.space && !keyStates.shift) {
+                return; // No movement keys pressed
+            }
+
+            const speed = moveSpeed * (keyStates.shift ? boostMultiplier : 1.0);
+
+            // Get camera's forward and right vectors
+            const forward = new THREE.Vector3();
+            camera.getWorldDirection(forward);
+            forward.normalize();
+
+            const right = new THREE.Vector3();
+            right.crossVectors(forward, camera.up).normalize();
+
+            const up = new THREE.Vector3(0, 1, 0);
+
+            // Calculate movement vector
+            const movement = new THREE.Vector3();
+
+            if (keyStates.w) movement.add(forward.clone().multiplyScalar(speed));
+            if (keyStates.s) movement.add(forward.clone().multiplyScalar(-speed));
+            if (keyStates.a) movement.add(right.clone().multiplyScalar(-speed));
+            if (keyStates.d) movement.add(right.clone().multiplyScalar(speed));
+            if (keyStates.space) movement.add(up.clone().multiplyScalar(speed));
+            if (keyStates.shift && !keyStates.w && !keyStates.s && !keyStates.a && !keyStates.d) {
+                // Shift alone moves down
+                movement.add(up.clone().multiplyScalar(-speed));
+            }
+
+            // Apply movement to camera and controls target
+            camera.position.add(movement);
+            controls.target.add(movement);
+        }
+
         // ==================== EVENT LISTENERS ====================
         function setupEventListeners() {
-            // Number keys for quick planet focus (1-9 for Pluto)
+            // WASD flight controls - keydown
             window.addEventListener('keydown', (e) => {
+                const key = e.key.toLowerCase();
+                if (key === 'w') keyStates.w = true;
+                if (key === 'a') keyStates.a = true;
+                if (key === 's') keyStates.s = true;
+                if (key === 'd') keyStates.d = true;
+                if (key === ' ') keyStates.space = true;
+                if (e.shiftKey) keyStates.shift = true;
+
+                // Number keys for quick planet focus (1-9 for Pluto)
                 switch (e.key) {
                     case '1': case '2': case '3': case '4':
                     case '5': case '6': case '7': case '8': case '9':
@@ -1323,6 +1799,17 @@
                         }
                         break;
                 }
+            });
+
+            // WASD flight controls - keyup
+            window.addEventListener('keyup', (e) => {
+                const key = e.key.toLowerCase();
+                if (key === 'w') keyStates.w = false;
+                if (key === 'a') keyStates.a = false;
+                if (key === 's') keyStates.s = false;
+                if (key === 'd') keyStates.d = false;
+                if (key === ' ') keyStates.space = false;
+                if (!e.shiftKey) keyStates.shift = false;
             });
 
             // Click planet to fly to it
@@ -1380,6 +1867,36 @@
                 elapsedTime = 0;
             });
 
+            // Keyboard navigation
+            window.addEventListener('keydown', (e) => {
+                const planetOrder = ['mercury', 'venus', 'earth', 'mars', 'jupiter', 'saturn', 'uranus', 'neptune', 'pluto'];
+
+                // Number keys 1-9 for planets
+                if (e.key >= '1' && e.key <= '9') {
+                    const index = parseInt(e.key) - 1;
+                    const planetName = planetOrder[index];
+                    const planet = planets.find(p => p.userData.name === planetName);
+                    if (planet) {
+                        focusPlanet(planet);
+                    }
+                }
+                // 0 key for Planet QQ
+                else if (e.key === '0') {
+                    const planetQQ = planets.find(p => p.userData.name === 'planetqq');
+                    if (planetQQ) {
+                        focusPlanet(planetQQ);
+                    }
+                }
+                // Minus/dash key for Black Hole
+                else if (e.key === '-' || e.key === '_') {
+                    // Fly to black hole
+                    const bhPos = BH_CONFIG.position;
+                    const distance = BH_CONFIG.scale * 0.5; // Good viewing distance
+                    controls.target.set(bhPos.x, bhPos.y, bhPos.z);
+                    camera.position.set(bhPos.x + distance, bhPos.y + distance * 0.3, bhPos.z + distance);
+                }
+            });
+
             // Window resize
             window.addEventListener('resize', () => {
                 camera.aspect = window.innerWidth / window.innerHeight;
@@ -1388,72 +1905,26 @@
                 composer.setSize(window.innerWidth, window.innerHeight);
             });
 
-            // Asteroid launcher button
-            document.getElementById('asteroid-btn').addEventListener('click', () => {
-                asteroidMode = !asteroidMode;
-                const btn = document.getElementById('asteroid-btn');
-                if (asteroidMode) {
-                    btn.textContent = '❌ Cancel Launch';
-                    btn.style.background = 'rgba(50, 200, 50, 0.8)';
-                    document.body.style.cursor = 'crosshair';
-                } else {
-                    btn.textContent = '🚀 Launch Asteroid';
-                    btn.style.background = 'rgba(200, 50, 50, 0.8)';
-                    document.body.style.cursor = 'default';
-                }
-            });
-
-            // Click handler for asteroid targeting
+            // Click handler for planet navigation
             renderer.domElement.addEventListener('click', (event) => {
-                if (asteroidMode) {
-                    // Launch asteroid at clicked planet
-                    const raycaster = new THREE.Raycaster();
-                    const mouse = new THREE.Vector2();
+                // Planet click-to-fly
+                const raycaster = new THREE.Raycaster();
+                const mouse = new THREE.Vector2();
 
-                    mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-                    mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+                mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+                mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
 
-                    raycaster.setFromCamera(mouse, camera);
+                raycaster.setFromCamera(mouse, camera);
 
-                    const meshes = celestialObjects.map(obj => obj.mesh);
-                    const intersects = raycaster.intersectObjects(meshes);
+                const meshes = celestialObjects.map(obj => obj.mesh);
+                const intersects = raycaster.intersectObjects(meshes);
 
-                    if (intersects.length > 0) {
-                        const clicked = celestialObjects.find(obj => obj.mesh === intersects[0].object);
-                        if (clicked && clicked.data && clicked.data.name) {
-                            const planet = planets.find(p => p.userData.name === clicked.data.name);
-                            if (planet) {
-                                launchAsteroidAt(planet, intersects[0].point);
-                            }
-                        }
-                    }
-
-                    // Exit asteroid mode after launch
-                    asteroidMode = false;
-                    document.getElementById('asteroid-btn').textContent = '🚀 Launch Asteroid';
-                    document.getElementById('asteroid-btn').style.background = 'rgba(200, 50, 50, 0.8)';
-                    document.body.style.cursor = 'default';
-
-                } else if (event.button === 0) {
-                    // Normal planet click-to-fly
-                    const raycaster = new THREE.Raycaster();
-                    const mouse = new THREE.Vector2();
-
-                    mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-                    mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
-
-                    raycaster.setFromCamera(mouse, camera);
-
-                    const meshes = celestialObjects.map(obj => obj.mesh);
-                    const intersects = raycaster.intersectObjects(meshes);
-
-                    if (intersects.length > 0) {
-                        const clicked = celestialObjects.find(obj => obj.mesh === intersects[0].object);
-                        if (clicked && clicked.data && clicked.data.name) {
-                            const planet = planets.find(p => p.userData.name === clicked.data.name);
-                            if (planet) {
-                                focusPlanet(planet);
-                            }
+                if (intersects.length > 0) {
+                    const clicked = celestialObjects.find(obj => obj.mesh === intersects[0].object);
+                    if (clicked && clicked.data && clicked.data.name) {
+                        const planet = planets.find(p => p.userData.name === clicked.data.name);
+                        if (planet) {
+                            focusPlanet(planet);
                         }
                     }
                 }
@@ -1535,6 +2006,42 @@
                     controls.target.copy(moonWorldPos);
                     const offset = new THREE.Vector3(distance, distance / 2, distance);
                     camera.position.copy(moonWorldPos).add(offset);
+                    e.target.value = ''; // Reset dropdown
+                    return;
+                }
+
+                // Handle Kuiper Belt
+                if (target === 'kuiper') {
+                    const kuiperDistance = 1685; // Center of Kuiper Belt (between 1550 and 1820)
+                    const viewDistance = 400; // Distance from center to view from
+                    controls.target.set(kuiperDistance, 0, 0);
+                    camera.position.set(kuiperDistance + viewDistance, viewDistance / 2, viewDistance);
+                    e.target.value = ''; // Reset dropdown
+                    return;
+                }
+
+                // Handle Planet QQ
+                if (target === 'planetqq') {
+                    const planet = planets.find(p => p.userData.name === 'Planet QQ');
+                    if (planet) {
+                        const distance = planet.userData.radius * 6;
+                        controls.target.copy(planet.position);
+                        const offset = new THREE.Vector3(distance, distance / 2, distance);
+                        camera.position.copy(planet.position).add(offset);
+                        e.target.value = ''; // Reset dropdown
+                    }
+                    return;
+                }
+
+                // Handle Black Hole
+                if (target === 'blackhole') {
+                    const viewDistance = 300;
+                    controls.target.copy(BH_CONFIG.position);
+                    camera.position.set(
+                        BH_CONFIG.position.x + viewDistance,
+                        BH_CONFIG.position.y + viewDistance / 2,
+                        BH_CONFIG.position.z + viewDistance
+                    );
                     e.target.value = ''; // Reset dropdown
                 }
             });
