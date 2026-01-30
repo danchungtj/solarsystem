@@ -119,6 +119,22 @@
             background: rgba(136, 136, 255, 0.4);
         }
 
+        .btn-awake {
+            background: rgba(220, 38, 38, 0.3);
+            border: 1px solid rgba(220, 38, 38, 0.6);
+            color: #fff;
+            font-weight: bold;
+        }
+
+        .btn-awake:hover {
+            background: rgba(220, 38, 38, 0.5);
+        }
+
+        .btn-awake.active {
+            background: rgba(220, 38, 38, 0.7);
+            border-color: rgba(220, 38, 38, 0.9);
+        }
+
         /* Planet Label Tooltip */
         #planet-label {
             position: absolute;
@@ -279,6 +295,8 @@
                 <span id="time-value" style="min-width: 45px; font-size: 13px;">0.3x</span>
                 <button id="pause-btn" class="btn" style="padding: 5px 10px; font-size: 11px;">⏸️ Pause</button>
                 <button id="reset-btn" class="btn" style="padding: 5px 10px; font-size: 11px;">🔄 Reset</button>
+                <button id="awake-btn" class="btn btn-awake" style="padding: 5px 10px; font-size: 11px;">🔴
+                    Awake</button>
             </div>
 
             <!-- Row 2: Navigation dropdown full width -->
@@ -331,6 +349,30 @@
                     </optgroup>
                     <optgroup label="♇ Pluto">
                         <option value="pluto">Pluto</option>
+                    </optgroup>
+                    <optgroup label="🪨 Asteroid Belt">
+                        <option value="ceres">Ceres</option>
+                    </optgroup>
+                    <optgroup label="☄️ Kuiper Belt Objects">
+                        <option value="orcus">Orcus</option>
+                        <option value="haumea">Haumea</option>
+                        <option value="quaoar">Quaoar</option>
+                        <option value="makemake">Makemake</option>
+                    </optgroup>
+                    <optgroup label="💫 Scattered Disk">
+                        <option value="eris">Eris</option>
+                        <option value="gonggong">Gonggong</option>
+                    </optgroup>
+                    <optgroup label="🌌 Inner Oort Cloud">
+                        <option value="sedna">Sedna</option>
+                    </optgroup>
+                    <optgroup label="🌠 Outer System">
+                        <option value="ots 44">OTS 44</option>
+                        <option value="wise 0855-0714">WISE 0855-0714</option>
+                        <option value="ogle-2016-blg-1928">OGLE-2016-BLG-1928</option>
+                        <option value="pso j318.5-22">PSO J318.5-22</option>
+                        <option value="simp0136">SIMP0136</option>
+                        <option value="planet x">Planet X</option>
                     </optgroup>
                     <optgroup label="☄️ Kuiper Belt">
                         <option value="kuiper">Kuiper Belt</option>
@@ -400,7 +442,7 @@
             camera: {
                 fov: 75,
                 near: 0.1,
-                far: 10000,
+                far: 50000,  // Increased from 10000 to support outer system bodies (up to 400 AU)
                 moveSpeed: 2.0,
                 boostMultiplier: 3.0,
                 mouseSensitivity: 0.002
@@ -449,9 +491,40 @@
             'Triton': { radius: 2.8, distance: 60, orbit: 5.88 }
         };
 
+        // Minor Planets (Asteroid Belt)
+        const MINOR_PLANETS = [
+            { name: 'Ceres', radius: 3.0, distance: 277, orbit: 1680, rotation: 0.38, color: 0x6b8ba3, type: 'asteroid' }
+        ];
+
+        // Trans-Neptunian Objects (Kuiper Belt, Scattered Disk, Inner Oort Cloud)
+        const TRANS_NEPTUNIAN_OBJECTS = [
+            // Kuiper Belt (30-50 AU)
+            { name: 'Orcus', radius: 3.0, distance: 1568, orbit: 92880, rotation: 10.5, color: 0x8b7d6b, type: 'kuiper' },
+            { name: 'Haumea', radius: 3.0, distance: 1720, orbit: 103950, rotation: 0.16, color: 0xc0c0c0, type: 'kuiper', shape: 'ellipsoid', rings: 1 },
+            { name: 'Quaoar', radius: 3.0, distance: 1748, orbit: 104730, rotation: 17.7, color: 0xa0522d, type: 'kuiper', rings: 2 },
+            { name: 'Makemake', radius: 3.0, distance: 1832, orbit: 111780, rotation: 22.5, color: 0xcd853f, type: 'kuiper' },
+            // Scattered Disk (50-100 AU)
+            { name: 'Eris', radius: 3.0, distance: 2708, orbit: 203670, rotation: 25.9, color: 0xd3d3d3, type: 'scattered' },
+            { name: 'Gonggong', radius: 3.0, distance: 2700, orbit: 201960, rotation: 22.4, color: 0x8b0000, type: 'scattered' },
+            // Inner Oort Cloud
+            { name: 'Sedna', radius: 3.0, distance: 3040, orbit: 241920, rotation: 10.3, color: 0xcd5c5c, type: 'oort' }
+        ];
+
+        // Fictional Outer System Bodies (just beyond Planet QQ at 2760)
+        const OUTER_SYSTEM_BODIES = [
+            { name: 'OTS 44', radius: 3.0, distance: 3000, orbit: 164000, rotation: 12, color: 0xff8c00, type: 'outer' },
+            { name: 'WISE 0855-0714', radius: 3.0, distance: 3300, orbit: 189000, rotation: 8, color: 0x4682b4, type: 'outer' },
+            { name: 'OGLE-2016-BLG-1928', radius: 3.0, distance: 3600, orbit: 216000, rotation: 15, color: 0x191970, type: 'outer' },
+            { name: 'PSO J318.5-22', radius: 3.0, distance: 3900, orbit: 243000, rotation: 5, color: 0x9370db, type: 'outer' },
+            { name: 'SIMP0136', radius: 3.0, distance: 4200, orbit: 272000, rotation: 2.4, color: 0x8b0000, type: 'outer' },
+            { name: 'Planet X', radius: 3.0, distance: 4500, orbit: 302000, rotation: 20, color: 0x1e90ff, type: 'outer' }
+        ];
+
+
         // ==================== SCENE SETUP ====================
         let scene, camera, renderer, composer, controls;
         let sun, planets = [], moons = [], asteroidBelt, kuiperBelt;
+        let minorPlanets = [], transNeptunianObjects = [], outerSystemBodies = []; // New celestial body arrays
         let celestialObjects = []; // For raycasting
         let comets = []; // Comets with tails
         let shootingStars = []; // Fast meteors
@@ -462,6 +535,18 @@
         let asteroidMode = false; // Targeting mode for asteroid launcher
         let activeAsteroids = []; // Active asteroid projectiles
         let explosions = []; // Explosion effects
+        let isAwakeMode = false; // Track awake/normal texture mode
+
+        // Map of celestial bodies that have awake versions
+        const AWAKE_TEXTURES = {
+            'Venus': { normal: 'textures/planets/venus_surface.jpg', awake: 'textures/planets/awake_venus.png' },
+            'Mars': { normal: 'textures/planets/mars.jpg', awake: 'textures/planets/awake_mars.png' },
+            'Jupiter': { normal: 'textures/planets/jupiter.jpg', awake: 'textures/planets/awake_jupiter.png' },
+            'Saturn': { normal: 'textures/planets/saturn.jpg', awake: 'textures/planets/awake_staturn.png' },
+            'Uranus': { normal: 'textures/planets/uranus.jpg', awake: 'textures/planets/awake_uranus.png' },
+            'Neptune': { normal: 'textures/planets/neptune.jpg', awake: 'textures/planets/awake_neptune.png' },
+            'Moon': { normal: 'textures/moons/moon.jpg', awake: 'textures/planets/awake_moon.png' }
+        };
 
         // WASD flight controls
         let keyStates = {
@@ -542,7 +627,7 @@
             controls.enableDamping = true;
             controls.dampingFactor = 0.05;
             controls.minDistance = 0;      // Allow zoom through planets
-            controls.maxDistance = 5000;   // Can zoom out very far
+            controls.maxDistance = 25000;  // Increased to support outer system bodies (was 5000)
             controls.enablePan = true;
             controls.target.set(0, 0, 0);
 
@@ -562,8 +647,9 @@
         let totalTextures = 0;
 
         function loadTextures() {
-            // Count total textures
-            totalTextures = 1 + PLANETS.length + Object.keys(MOON_DATA).length + 1; // Sun + Planets + Moons + Starfield
+            // Count total textures (including new objects)
+            totalTextures = 1 + PLANETS.length + Object.keys(MOON_DATA).length + 1 +
+                MINOR_PLANETS.length + TRANS_NEPTUNIAN_OBJECTS.length + OUTER_SYSTEM_BODIES.length;
 
             // Load starfield background
             loadTexture('textures/backgrounds/starfield.jpg', (texture) => {
@@ -576,6 +662,21 @@
             // Create Planets
             PLANETS.forEach((planetData, index) => {
                 createPlanet(planetData, index);
+            });
+
+            // Create Minor Planets (Ceres)
+            MINOR_PLANETS.forEach((bodyData) => {
+                createMinorPlanet(bodyData);
+            });
+
+            // Create Trans-Neptunian Objects (Kuiper Belt, Scattered Disk, Oort Cloud)
+            TRANS_NEPTUNIAN_OBJECTS.forEach((bodyData) => {
+                createMinorPlanet(bodyData);
+            });
+
+            // Create Outer System Bodies (Fictional planets)
+            OUTER_SYSTEM_BODIES.forEach((bodyData) => {
+                createMinorPlanet(bodyData);
             });
 
             // Create Asteroid Belt
@@ -683,6 +784,13 @@
             if (planetData.name === 'Venus') texturePath = 'textures/planets/venus_surface.jpg';
             if (planetData.name === 'Planet QQ') texturePath = 'textures/planets/qq.jpg';
 
+            // Use awake texture if in awake mode and available
+            if (isAwakeMode && AWAKE_TEXTURES[planetData.name]) {
+                texturePath = AWAKE_TEXTURES[planetData.name].awake;
+            } else if (!isAwakeMode && AWAKE_TEXTURES[planetData.name]) {
+                texturePath = AWAKE_TEXTURES[planetData.name].normal;
+            }
+
             loadTexture(texturePath, (texture) => {
                 const material = new THREE.MeshStandardMaterial({
                     map: texture,
@@ -739,6 +847,161 @@
                 scene.add(planetGroup);
             });
         }
+
+        function createMinorPlanet(bodyData) {
+            const bodyGroup = new THREE.Group();
+
+            // Determine geometry based on shape
+            const radius = bodyData.radius;
+            let geometry;
+
+            if (bodyData.shape === 'ellipsoid') {
+                // Haumea - ellipsoid shape (2322 x 1704 x 1138 km ratio ≈ 2.0 x 1.5 x 1.0)
+                geometry = new THREE.SphereGeometry(radius, 32, 32);
+            } else {
+                // Standard sphere for all other bodies
+                geometry = new THREE.SphereGeometry(radius, 32, 32);
+            }
+
+            // Determine texture path - try textures/objects/ first, fallback to color
+            const textureName = bodyData.name.toLowerCase().replace(/\s+/g, '_').replace(/\./g, '_');
+            let texturePath = `textures/objects/${textureName}.jpg`;
+
+            // Handle special cases for texture filenames
+            if (bodyData.name === 'Sedna') texturePath = 'textures/objects/senda.jpeg'; // Typo in filename
+            if (bodyData.name === 'PSO J318.5-22') texturePath = 'textures/objects/PSO_J318.5_22.jpg';
+            if (bodyData.name === 'WISE 0855-0714') texturePath = 'textures/objects/wise_0855_0714.jpg';
+            if (bodyData.name === 'OGLE-2016-BLG-1928') texturePath = 'textures/objects/OGLE-2016-BLG-1928.jpg';
+            if (bodyData.name === 'SIMP0136') texturePath = 'textures/objects/SIMP0136.jpg';
+            if (bodyData.name === 'Planet X') texturePath = 'textures/objects/planet_x.jpg';
+            if (bodyData.name === 'OTS 44') texturePath = 'textures/objects/ots_44.jpg'; // May not exist
+
+            loadTexture(texturePath, (texture) => {
+                const material = new THREE.MeshStandardMaterial({
+                    map: texture,
+                    roughness: 0.6,
+                    metalness: 0.15
+                });
+
+                const bodyMesh = new THREE.Mesh(geometry, material);
+
+                // Apply ellipsoid scaling for Haumea
+                if (bodyData.shape === 'ellipsoid') {
+                    bodyMesh.scale.set(2.0, 1.5, 1.0); // Elongated shape
+                }
+
+                bodyGroup.add(bodyMesh);
+
+                // Add white line rings if specified
+                if (bodyData.rings) {
+                    createWhiteLineRings(bodyGroup, radius, bodyData.rings, bodyData.shape === 'ellipsoid');
+                }
+
+                // Add orbit line
+                createOrbitLine(bodyData.distance);
+
+                // Store body data
+                bodyGroup.userData = {
+                    ...bodyData,
+                    angle: Math.random() * Math.PI * 2,
+                    rotationSpeed: (1 / bodyData.rotation) * 0.01,
+                    orbitSpeed: (365 / bodyData.orbit) * 0.001
+                };
+
+                // Add to appropriate array based on type
+                if (bodyData.type === 'asteroid') {
+                    minorPlanets.push(bodyGroup);
+                } else if (bodyData.type === 'kuiper' || bodyData.type === 'scattered' || bodyData.type === 'oort') {
+                    transNeptunianObjects.push(bodyGroup);
+                } else if (bodyData.type === 'outer') {
+                    outerSystemBodies.push(bodyGroup);
+                }
+
+                scene.add(bodyGroup);
+                celestialObjects.push({ mesh: bodyMesh, name: bodyData.name, data: bodyData });
+            }, () => {
+                // Fallback to solid color if texture not found
+                const material = new THREE.MeshStandardMaterial({
+                    color: bodyData.color,
+                    roughness: 0.6,
+                    metalness: 0.15
+                });
+
+                const bodyMesh = new THREE.Mesh(geometry, material);
+
+                // Apply ellipsoid scaling for Haumea
+                if (bodyData.shape === 'ellipsoid') {
+                    bodyMesh.scale.set(2.0, 1.5, 1.0);
+                }
+
+                bodyGroup.add(bodyMesh);
+
+                // Add white line rings if specified
+                if (bodyData.rings) {
+                    createWhiteLineRings(bodyGroup, radius, bodyData.rings, bodyData.shape === 'ellipsoid');
+                }
+
+                // Add orbit line
+                createOrbitLine(bodyData.distance);
+
+                bodyGroup.userData = {
+                    ...bodyData,
+                    angle: Math.random() * Math.PI * 2,
+                    rotationSpeed: (1 / bodyData.rotation) * 0.01,
+                    orbitSpeed: (365 / bodyData.orbit) * 0.001
+                };
+
+                // Add to appropriate array
+                if (bodyData.type === 'asteroid') {
+                    minorPlanets.push(bodyGroup);
+                } else if (bodyData.type === 'kuiper' || bodyData.type === 'scattered' || bodyData.type === 'oort') {
+                    transNeptunianObjects.push(bodyGroup);
+                } else if (bodyData.type === 'outer') {
+                    outerSystemBodies.push(bodyGroup);
+                }
+
+                scene.add(bodyGroup);
+                celestialObjects.push({ mesh: bodyMesh, name: bodyData.name, data: bodyData });
+            });
+        }
+
+        function createWhiteLineRings(parentGroup, bodyRadius, ringCount, isEllipsoid) {
+            for (let i = 0; i < ringCount; i++) {
+                // Tighter ring for Haumea (1.6x accounts for 2.0x ellipsoid scaling)
+                const ringRadius = bodyRadius * (1.6 + i * 0.4); // Reduced from 2.5 to 1.6
+                const segments = 64;
+
+                // Create ring as a line loop
+                const ringPoints = [];
+                for (let j = 0; j <= segments; j++) {
+                    const angle = (j / segments) * Math.PI * 2;
+                    ringPoints.push(new THREE.Vector3(
+                        Math.cos(angle) * ringRadius,
+                        0,
+                        Math.sin(angle) * ringRadius
+                    ));
+                }
+
+                const ringGeometry = new THREE.BufferGeometry().setFromPoints(ringPoints);
+                const ringMaterial = new THREE.LineBasicMaterial({
+                    color: 0xffffff,
+                    linewidth: 2,
+                    transparent: true,
+                    opacity: 0.8
+                });
+
+                const ringMesh = new THREE.Line(ringGeometry, ringMaterial);
+                ringMesh.rotation.x = Math.PI / 2; // Horizontal orientation
+
+                // For ellipsoid bodies, scale ring to match
+                if (isEllipsoid) {
+                    ringMesh.scale.set(2.0, 1.0, 1.0); // Match Haumea's elongation
+                }
+
+                parentGroup.add(ringMesh);
+            }
+        }
+
 
         function createAtmosphere(planetMesh, radius, color) {
             const atmosphereGeometry = new THREE.SphereGeometry(radius * 1.15, 32, 32);
@@ -826,7 +1089,15 @@
             const moonGroup = new THREE.Group();
             const geometry = new THREE.SphereGeometry(moonInfo.radius * CONFIG.educational.moonSizeScale, 16, 16);
 
-            loadTexture(`textures/moons/${moonName.toLowerCase()}.jpg`, (texture) => {
+            // Determine texture path based on awake mode
+            let texturePath = `textures/moons/${moonName.toLowerCase()}.jpg`;
+            if (isAwakeMode && AWAKE_TEXTURES[moonName]) {
+                texturePath = AWAKE_TEXTURES[moonName].awake;
+            } else if (!isAwakeMode && AWAKE_TEXTURES[moonName]) {
+                texturePath = AWAKE_TEXTURES[moonName].normal;
+            }
+
+            loadTexture(texturePath, (texture) => {
                 const material = new THREE.MeshStandardMaterial({
                     map: texture,
                     roughness: 0.6,  // Reduced from 0.9 for brighter appearance
@@ -955,8 +1226,8 @@
         function createKuiperBelt() {
             const asteroidGeometry = new THREE.IcosahedronGeometry(1.5, 0);  // 3x larger (was 0.5)
             const asteroidMaterial = new THREE.MeshStandardMaterial({
-                color: 0xaabbcc,      // Slightly bluish-grey for distinction
-                emissive: 0x556677,   // Cooler glow
+                color: 0xb8956a,      // Light brown (was 0xaabbcc bluish-grey)
+                emissive: 0x8b7355,   // Darker brown glow (was 0x556677)
                 roughness: 0.9,
                 metalness: 0.1
             });
@@ -1442,6 +1713,40 @@
                     });
                 });
 
+                // Update minor planets (Ceres)
+                minorPlanets.forEach(body => {
+                    body.userData.angle += body.userData.orbitSpeed * timeScale;
+                    body.position.x = Math.cos(body.userData.angle) * body.userData.distance;
+                    body.position.z = Math.sin(body.userData.angle) * body.userData.distance;
+
+                    if (body.children[0]) {
+                        body.children[0].rotation.y += body.userData.rotationSpeed * timeScale;
+                    }
+                });
+
+                // Update trans-Neptunian objects
+                transNeptunianObjects.forEach(body => {
+                    body.userData.angle += body.userData.orbitSpeed * timeScale;
+                    body.position.x = Math.cos(body.userData.angle) * body.userData.distance;
+                    body.position.z = Math.sin(body.userData.angle) * body.userData.distance;
+
+                    // Rotate all bodies except Haumea (keep ellipsoid stationary)
+                    if (body.children[0] && body.userData.name !== 'Haumea') {
+                        body.children[0].rotation.y += body.userData.rotationSpeed * timeScale;
+                    }
+                });
+
+                // Update outer system bodies
+                outerSystemBodies.forEach(body => {
+                    body.userData.angle += body.userData.orbitSpeed * timeScale;
+                    body.position.x = Math.cos(body.userData.angle) * body.userData.distance;
+                    body.position.z = Math.sin(body.userData.angle) * body.userData.distance;
+
+                    if (body.children[0]) {
+                        body.children[0].rotation.y += body.userData.rotationSpeed * timeScale;
+                    }
+                });
+
                 // Rotate asteroid belt slightly
                 if (asteroidBelt) {
                     asteroidBelt.rotation.y += 0.0001 * timeScale;
@@ -1700,6 +2005,114 @@
                     }
                 }
             });
+
+            // Show minor planet names when camera is close
+            minorPlanets.forEach((body, index) => {
+                const distance = camera.position.distanceTo(body.position);
+                const visibilityThreshold = body.userData.radius * 15;
+
+                const labelKey = 'minor_' + index;
+                if (distance < visibilityThreshold) {
+                    const vector = body.position.clone();
+                    vector.project(camera);
+                    const x = (vector.x * 0.5 + 0.5) * window.innerWidth;
+                    const y = (-(vector.y * 0.5) + 0.5) * window.innerHeight;
+
+                    if (!planetLabels[labelKey]) {
+                        const label = document.createElement('div');
+                        label.style.position = 'absolute';
+                        label.style.color = 'white';
+                        label.style.fontSize = '14px';
+                        label.style.fontWeight = 'bold';
+                        label.style.pointerEvents = 'none';
+                        label.style.textShadow = '1px 1px 2px black';
+                        label.style.zIndex = '999';
+                        label.textContent = body.userData.name;
+                        document.body.appendChild(label);
+                        planetLabels[labelKey] = label;
+                    }
+
+                    planetLabels[labelKey].style.left = x + 'px';
+                    planetLabels[labelKey].style.top = (y - 15) + 'px';
+                    planetLabels[labelKey].style.display = 'block';
+                } else {
+                    if (planetLabels[labelKey]) {
+                        planetLabels[labelKey].style.display = 'none';
+                    }
+                }
+            });
+
+            // Show TNO names when camera is close
+            transNeptunianObjects.forEach((body, index) => {
+                const distance = camera.position.distanceTo(body.position);
+                const visibilityThreshold = body.userData.radius * 15;
+
+                const labelKey = 'tno_' + index;
+                if (distance < visibilityThreshold) {
+                    const vector = body.position.clone();
+                    vector.project(camera);
+                    const x = (vector.x * 0.5 + 0.5) * window.innerWidth;
+                    const y = (-(vector.y * 0.5) + 0.5) * window.innerHeight;
+
+                    if (!planetLabels[labelKey]) {
+                        const label = document.createElement('div');
+                        label.style.position = 'absolute';
+                        label.style.color = 'white';
+                        label.style.fontSize = '14px';
+                        label.style.fontWeight = 'bold';
+                        label.style.pointerEvents = 'none';
+                        label.style.textShadow = '1px 1px 2px black';
+                        label.style.zIndex = '999';
+                        label.textContent = body.userData.name;
+                        document.body.appendChild(label);
+                        planetLabels[labelKey] = label;
+                    }
+
+                    planetLabels[labelKey].style.left = x + 'px';
+                    planetLabels[labelKey].style.top = (y - 15) + 'px';
+                    planetLabels[labelKey].style.display = 'block';
+                } else {
+                    if (planetLabels[labelKey]) {
+                        planetLabels[labelKey].style.display = 'none';
+                    }
+                }
+            });
+
+            // Show outer system body names when camera is close
+            outerSystemBodies.forEach((body, index) => {
+                const distance = camera.position.distanceTo(body.position);
+                const visibilityThreshold = body.userData.radius * 15;
+
+                const labelKey = 'outer_' + index;
+                if (distance < visibilityThreshold) {
+                    const vector = body.position.clone();
+                    vector.project(camera);
+                    const x = (vector.x * 0.5 + 0.5) * window.innerWidth;
+                    const y = (-(vector.y * 0.5) + 0.5) * window.innerHeight;
+
+                    if (!planetLabels[labelKey]) {
+                        const label = document.createElement('div');
+                        label.style.position = 'absolute';
+                        label.style.color = 'white';
+                        label.style.fontSize = '14px';
+                        label.style.fontWeight = 'bold';
+                        label.style.pointerEvents = 'none';
+                        label.style.textShadow = '1px 1px 2px black';
+                        label.style.zIndex = '999';
+                        label.textContent = body.userData.name;
+                        document.body.appendChild(label);
+                        planetLabels[labelKey] = label;
+                    }
+
+                    planetLabels[labelKey].style.left = x + 'px';
+                    planetLabels[labelKey].style.top = (y - 15) + 'px';
+                    planetLabels[labelKey].style.display = 'block';
+                } else {
+                    if (planetLabels[labelKey]) {
+                        planetLabels[labelKey].style.display = 'none';
+                    }
+                }
+            });
         }
 
         function updatePerformance() {
@@ -1867,6 +2280,23 @@
                 elapsedTime = 0;
             });
 
+            // Awake mode toggle button
+            document.getElementById('awake-btn').addEventListener('click', () => {
+                isAwakeMode = !isAwakeMode;
+                const btn = document.getElementById('awake-btn');
+
+                if (isAwakeMode) {
+                    btn.textContent = '🟢 Normal';
+                    btn.classList.add('active');
+                } else {
+                    btn.textContent = '🔴 Awake';
+                    btn.classList.remove('active');
+                }
+
+                // Reload all planet and moon textures
+                reloadCelestialTextures();
+            });
+
             // Keyboard navigation
             window.addEventListener('keydown', (e) => {
                 const planetOrder = ['mercury', 'venus', 'earth', 'mars', 'jupiter', 'saturn', 'uranus', 'neptune', 'pluto'];
@@ -1922,9 +2352,31 @@
                 if (intersects.length > 0) {
                     const clicked = celestialObjects.find(obj => obj.mesh === intersects[0].object);
                     if (clicked && clicked.data && clicked.data.name) {
+                        // Check main planets
                         const planet = planets.find(p => p.userData.name === clicked.data.name);
                         if (planet) {
                             focusPlanet(planet);
+                            return;
+                        }
+
+                        // Check minor planets
+                        const minorPlanet = minorPlanets.find(b => b.userData.name === clicked.data.name);
+                        if (minorPlanet) {
+                            focusPlanet(minorPlanet);
+                            return;
+                        }
+
+                        // Check TNOs
+                        const tno = transNeptunianObjects.find(b => b.userData.name === clicked.data.name);
+                        if (tno) {
+                            focusPlanet(tno);
+                            return;
+                        }
+
+                        // Check outer system bodies
+                        const outerBody = outerSystemBodies.find(b => b.userData.name === clicked.data.name);
+                        if (outerBody) {
+                            focusPlanet(outerBody);
                         }
                     }
                 }
@@ -2010,6 +2462,40 @@
                     return;
                 }
 
+                // Handle minor planets (Ceres)
+                const minorPlanet = minorPlanets.find(b => b.userData.name.toLowerCase() === target);
+                if (minorPlanet) {
+                    const distance = minorPlanet.userData.radius * 6;
+                    controls.target.copy(minorPlanet.position);
+                    const offset = new THREE.Vector3(distance, distance / 2, distance);
+                    camera.position.copy(minorPlanet.position).add(offset);
+                    e.target.value = ''; // Reset dropdown
+                    return;
+                }
+
+                // Handle trans-Neptunian objects
+                const tno = transNeptunianObjects.find(b => b.userData.name.toLowerCase() === target);
+                if (tno) {
+                    const distance = tno.userData.radius * 6;
+                    controls.target.copy(tno.position);
+                    const offset = new THREE.Vector3(distance, distance / 2, distance);
+                    camera.position.copy(tno.position).add(offset);
+                    e.target.value = ''; // Reset dropdown
+                    return;
+                }
+
+                // Handle outer system bodies
+                const outerBody = outerSystemBodies.find(b => b.userData.name.toLowerCase() === target);
+                if (outerBody) {
+                    const distance = outerBody.userData.radius * 6;
+                    controls.target.copy(outerBody.position);
+                    const offset = new THREE.Vector3(distance, distance / 2, distance);
+                    camera.position.copy(outerBody.position).add(offset);
+                    e.target.value = ''; // Reset dropdown
+                    return;
+                }
+
+
                 // Handle Kuiper Belt
                 if (target === 'kuiper') {
                     const kuiperDistance = 1685; // Center of Kuiper Belt (between 1550 and 1820)
@@ -2043,6 +2529,57 @@
                         BH_CONFIG.position.z + viewDistance
                     );
                     e.target.value = ''; // Reset dropdown
+                }
+            });
+        }
+
+        function reloadCelestialTextures() {
+            // Reload planet textures
+            planets.forEach(planetGroup => {
+                const planetData = planetGroup.userData;
+                const planetMesh = planetGroup.children.find(child => child.type === 'Mesh' && child.geometry.type === 'SphereGeometry');
+
+                if (planetMesh && planetMesh.material) {
+                    // Determine the correct texture path
+                    let texturePath = `textures/planets/${planetData.name.toLowerCase()}.jpg`;
+                    if (planetData.name === 'Earth') texturePath = 'textures/planets/earth_daymap.jpg';
+                    if (planetData.name === 'Venus') texturePath = 'textures/planets/venus_surface.jpg';
+                    if (planetData.name === 'Planet QQ') texturePath = 'textures/planets/qq.jpg';
+
+                    // Use awake texture if in awake mode and available
+                    if (isAwakeMode && AWAKE_TEXTURES[planetData.name]) {
+                        texturePath = AWAKE_TEXTURES[planetData.name].awake;
+                    } else if (!isAwakeMode && AWAKE_TEXTURES[planetData.name]) {
+                        texturePath = AWAKE_TEXTURES[planetData.name].normal;
+                    }
+
+                    // Load and apply new texture
+                    textureLoader.load(texturePath, (texture) => {
+                        planetMesh.material.map = texture;
+                        planetMesh.material.needsUpdate = true;
+                    });
+                }
+            });
+
+            // Reload moon textures
+            moons.forEach(moonGroup => {
+                const moonData = moonGroup.userData;
+                const moonMesh = moonGroup.children.find(child => child.type === 'Mesh');
+
+                if (moonMesh && moonMesh.material && moonData.name) {
+                    // Determine texture path based on awake mode
+                    let texturePath = `textures/moons/${moonData.name.toLowerCase()}.jpg`;
+                    if (isAwakeMode && AWAKE_TEXTURES[moonData.name]) {
+                        texturePath = AWAKE_TEXTURES[moonData.name].awake;
+                    } else if (!isAwakeMode && AWAKE_TEXTURES[moonData.name]) {
+                        texturePath = AWAKE_TEXTURES[moonData.name].normal;
+                    }
+
+                    // Load and apply new texture
+                    textureLoader.load(texturePath, (texture) => {
+                        moonMesh.material.map = texture;
+                        moonMesh.material.needsUpdate = true;
+                    });
                 }
             });
         }
