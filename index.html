@@ -179,24 +179,76 @@
             color: #0f0;
         }
 
-        /* Instructions */
-        #instructions {
-            position: absolute;
-            bottom: 20px;
-            left: 20px;
-            background: rgba(0, 0, 0, 0.7);
+        /* Help Button */
+        #help-btn {
+            position: fixed;
+            top: 20px;
+            left: 670px;
+            /* Positioned to the right of time-control panel */
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: rgba(0, 0, 0, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            font-size: 20px;
+            font-weight: bold;
+            font-family: 'Segoe UI', Tahoma, sans-serif;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            pointer-events: all;
+            transition: all 0.3s ease;
             backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            border-radius: 10px;
-            padding: 15px;
-            max-width: 300px;
-            font-size: 12px;
+        }
+
+        #help-btn:hover {
+            background: rgba(0, 0, 0, 0.95);
+            border-color: rgba(255, 255, 255, 0.5);
+            transform: scale(1.1);
+        }
+
+        /* Instructions Overlay */
+        #instructions {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(15px);
+            display: none;
+            /* Hidden by default */
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            pointer-events: all;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        #instructions.visible {
+            display: flex;
+            opacity: 1;
+        }
+
+        #instructions-content {
+            background: rgba(0, 0, 0, 0.9);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 15px;
+            padding: 30px;
+            max-width: 500px;
+            font-size: 14px;
+            position: relative;
         }
 
         #instructions h3 {
-            margin: 0 0 10px 0;
+            margin: 0 0 20px 0;
             color: #88f;
-            font-size: 14px;
+            font-size: 24px;
+            text-align: center;
         }
 
         #instructions ul {
@@ -206,17 +258,36 @@
         }
 
         #instructions li {
-            margin: 5px 0;
+            margin: 10px 0;
             color: #ccc;
+            line-height: 1.6;
         }
 
         #instructions kbd {
-            background: rgba(255, 255, 255, 0.1);
-            padding: 2px 6px;
-            border-radius: 3px;
+            background: rgba(255, 255, 255, 0.15);
+            padding: 4px 8px;
+            border-radius: 4px;
             color: #fff;
             font-family: 'Courier New', monospace;
-            font-size: 11px;
+            font-size: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        #close-help {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: none;
+            border: none;
+            color: #fff;
+            font-size: 24px;
+            cursor: pointer;
+            opacity: 0.7;
+            transition: opacity 0.2s;
+        }
+
+        #close-help:hover {
+            opacity: 1;
         }
 
         /* Loading Screen */
@@ -297,6 +368,9 @@
                 <button id="reset-btn" class="btn" style="padding: 5px 10px; font-size: 11px;">🔄 Reset</button>
                 <button id="awake-btn" class="btn btn-awake" style="padding: 5px 10px; font-size: 11px;">🔴
                     Awake</button>
+                <button id="solarballs-btn" class="btn"
+                    style="padding: 5px 10px; font-size: 11px; background: rgba(255, 200, 0, 0.2); border-color: rgba(255, 200, 0, 0.4);">😊
+                    Solar Balls</button>
             </div>
 
             <!-- Row 2: Navigation dropdown full width -->
@@ -396,19 +470,25 @@
             Objects: <span id="objects">0</span>
         </div>
 
-        <!-- Instructions -->
+        <!-- Help Button -->
+        <button id="help-btn" title="Show Controls">H</button>
+
+        <!-- Instructions Overlay (Hidden by default) -->
         <div id="instructions">
-            <h3>🎮 Controls</h3>
-            <ul>
-                <li><kbd>W/A/S/D</kbd> Fly Camera (Forward/Left/Back/Right)</li>
-                <li><kbd>Space</kbd> Fly Up | <kbd>Shift</kbd> Fly Down/Boost</li>
-                <li><kbd>Left-Click Drag</kbd> Rotate View</li>
-                <li><kbd>Right-Click Drag</kbd> Pan Camera</li>
-                <li><kbd>Scroll Wheel</kbd> Zoom In/Out</li>
-                <li><kbd>Click Planet</kbd> Fly To Planet</li>
-                <li><kbd>1-9</kbd> Jump to Planets | <kbd>0</kbd> Planet QQ | <kbd>-</kbd> Black Hole</li>
-                <li>Planet labels appear when close!</li>
-            </ul>
+            <div id="instructions-content">
+                <button id="close-help" title="Close">×</button>
+                <h3>🎮 Controls</h3>
+                <ul>
+                    <li><kbd>W/A/S/D</kbd> Fly Camera (Forward/Left/Back/Right)</li>
+                    <li><kbd>Space</kbd> Fly Up | <kbd>Shift</kbd> Fly Down/Boost</li>
+                    <li><kbd>Left-Click Drag</kbd> Rotate View</li>
+                    <li><kbd>Right-Click Drag</kbd> Pan Camera</li>
+                    <li><kbd>Scroll Wheel</kbd> Zoom In/Out</li>
+                    <li><kbd>Click Planet</kbd> Fly To Planet</li>
+                    <li><kbd>1-9</kbd> Jump to Planets | <kbd>0</kbd> Planet QQ | <kbd>-</kbd> Black Hole</li>
+                    <li>Planet labels appear when close!</li>
+                </ul>
+            </div>
         </div>
     </div>
 
@@ -536,6 +616,7 @@
         let activeAsteroids = []; // Active asteroid projectiles
         let explosions = []; // Explosion effects
         let isAwakeMode = false; // Track awake/normal texture mode
+        let isSolarBallsMode = false; // Track Solar Balls mode
 
         // Map of celestial bodies that have awake versions
         const AWAKE_TEXTURES = {
@@ -548,6 +629,19 @@
             'Uranus': { normal: 'textures/planets/uranus.jpg', awake: 'textures/planets/awake_uranus.png' },
             'Neptune': { normal: 'textures/planets/neptune.jpg', awake: 'textures/planets/awake_neptune.png' },
             'Moon': { normal: 'textures/moons/moon.jpg', awake: 'textures/planets/awake_moon.png' }
+        };
+
+        // Map of celestial bodies with Solar Balls versions
+        const SOLARBALLS_TEXTURES = {
+            'Mercury': 'textures/planets/solarballs_mercury.jpg',
+            'Venus': 'textures/planets/solarballs_venus.jpg',
+            'Earth': 'textures/planets/solarballs_earth.jpg',
+            'Mars': 'textures/planets/solarballs_mars.jpg',
+            'Jupiter': 'textures/planets/solarballs_jupiter.jpg',
+            'Saturn': 'textures/planets/solarballs_saturn.jpg',
+            'Uranus': 'textures/planets/solarballs_uranus.jpg',
+            'Neptune': 'textures/planets/solarballs_neptune.jpg',
+            'Pluto': 'textures/planets/solarballs_pluto.jpg'
         };
 
         // WASD flight controls
@@ -2317,9 +2411,40 @@
                 if (isAwakeMode) {
                     btn.textContent = '🟢 Normal';
                     btn.classList.add('active');
+                    // Turn off Solar Balls mode if it's on
+                    if (isSolarBallsMode) {
+                        isSolarBallsMode = false;
+                        const solarBtn = document.getElementById('solarballs-btn');
+                        solarBtn.textContent = '😊 Solar Balls';
+                        solarBtn.style.background = 'rgba(255, 200, 0, 0.2)';
+                    }
                 } else {
                     btn.textContent = '🔴 Awake';
                     btn.classList.remove('active');
+                }
+
+                // Reload all planet and moon textures
+                reloadCelestialTextures();
+            });
+
+            // Solar Balls mode toggle button
+            document.getElementById('solarballs-btn').addEventListener('click', () => {
+                isSolarBallsMode = !isSolarBallsMode;
+                const btn = document.getElementById('solarballs-btn');
+
+                if (isSolarBallsMode) {
+                    btn.textContent = '🌍 Normal';
+                    btn.style.background = 'rgba(255, 200, 0, 0.5)';
+                    // Turn off Awake mode if it's on
+                    if (isAwakeMode) {
+                        isAwakeMode = false;
+                        const awakeBtn = document.getElementById('awake-btn');
+                        awakeBtn.textContent = '🔴 Awake';
+                        awakeBtn.classList.remove('active');
+                    }
+                } else {
+                    btn.textContent = '😊 Solar Balls';
+                    btn.style.background = 'rgba(255, 200, 0, 0.2)';
                 }
 
                 // Reload all planet and moon textures
@@ -2560,6 +2685,25 @@
                     e.target.value = ''; // Reset dropdown
                 }
             });
+
+            // Help button - Show instructions overlay
+            document.getElementById('help-btn').addEventListener('click', () => {
+                const instructions = document.getElementById('instructions');
+                instructions.classList.add('visible');
+            });
+
+            // Close help button - Hide instructions overlay
+            document.getElementById('close-help').addEventListener('click', () => {
+                const instructions = document.getElementById('instructions');
+                instructions.classList.remove('visible');
+            });
+
+            // Click outside to close instructions overlay
+            document.getElementById('instructions').addEventListener('click', (e) => {
+                if (e.target.id === 'instructions') {
+                    e.target.classList.remove('visible');
+                }
+            });
         }
 
         function reloadCelestialTextures() {
@@ -2575,8 +2719,10 @@
                     if (planetData.name === 'Venus') texturePath = 'textures/planets/venus_surface.jpg';
                     if (planetData.name === 'Planet QQ') texturePath = 'textures/planets/qq.jpg';
 
-                    // Use awake texture if in awake mode and available
-                    if (isAwakeMode && AWAKE_TEXTURES[planetData.name]) {
+                    // Priority: Solar Balls > Awake > Normal
+                    if (isSolarBallsMode && SOLARBALLS_TEXTURES[planetData.name]) {
+                        texturePath = SOLARBALLS_TEXTURES[planetData.name];
+                    } else if (isAwakeMode && AWAKE_TEXTURES[planetData.name]) {
                         texturePath = AWAKE_TEXTURES[planetData.name].awake;
                     } else if (!isAwakeMode && AWAKE_TEXTURES[planetData.name]) {
                         texturePath = AWAKE_TEXTURES[planetData.name].normal;
