@@ -633,6 +633,7 @@
 
         // Map of celestial bodies with Solar Balls versions
         const SOLARBALLS_TEXTURES = {
+            'Sun': 'textures/sun/solarballs_sun.jpg',
             'Mercury': 'textures/planets/solarballs_mercury.jpg',
             'Venus': 'textures/planets/solarballs_venus.jpg',
             'Earth': 'textures/planets/solarballs_earth.jpg',
@@ -641,7 +642,8 @@
             'Saturn': 'textures/planets/solarballs_saturn.jpg',
             'Uranus': 'textures/planets/solarballs_uranus.jpg',
             'Neptune': 'textures/planets/solarballs_neptune.jpg',
-            'Pluto': 'textures/planets/solarballs_pluto.jpg'
+            'Pluto': 'textures/planets/solarballs_pluto.jpg',
+            'Moon': 'textures/moons/solarballs_moon.jpg'
         };
 
         // WASD flight controls
@@ -2742,9 +2744,13 @@
                 const moonMesh = moonGroup.children.find(child => child.type === 'Mesh');
 
                 if (moonMesh && moonMesh.material && moonData.name) {
-                    // Determine texture path based on awake mode
+                    // Determine texture path based on mode priority: Solar Balls > Awake > Normal
                     let texturePath = `textures/moons/${moonData.name.toLowerCase()}.jpg`;
-                    if (isAwakeMode && AWAKE_TEXTURES[moonData.name]) {
+
+                    // Priority: Solar Balls > Awake > Normal
+                    if (isSolarBallsMode && SOLARBALLS_TEXTURES[moonData.name]) {
+                        texturePath = SOLARBALLS_TEXTURES[moonData.name];
+                    } else if (isAwakeMode && AWAKE_TEXTURES[moonData.name]) {
                         texturePath = AWAKE_TEXTURES[moonData.name].awake;
                     } else if (!isAwakeMode && AWAKE_TEXTURES[moonData.name]) {
                         texturePath = AWAKE_TEXTURES[moonData.name].normal;
