@@ -831,7 +831,7 @@
                 scene.add(sunLight);
 
                 // Strong ambient light for educational mode (brighter for dark planets/moons)
-                const ambientLight = new THREE.AmbientLight(0xf2f2f2); // 95% brightness (increased from 73%)
+                const ambientLight = new THREE.AmbientLight(0xffffff, 1.5); // Full white at 150% intensity
                 scene.add(ambientLight);
             }, () => {
                 // Fallback without texture
