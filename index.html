@@ -183,8 +183,8 @@
         #help-btn {
             position: fixed;
             top: 20px;
-            left: 670px;
-            /* Positioned to the right of time-control panel */
+            right: 20px;
+            left: auto;
             width: 40px;
             height: 40px;
             border-radius: 50%;
@@ -341,6 +341,28 @@
 </head>
 
 <body>
+    <audio id="bg-music" src="assets/sound.mp3" preload="auto" loop></audio>
+    <script>
+        (() => {
+            const audio = document.getElementById('bg-music');
+            if (!audio) return;
+
+            audio.volume = 0.25;
+            audio.loop = true;
+
+            const tryPlay = () => audio.play().catch(() => {});
+            const unlock = () => tryPlay();
+
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', tryPlay, { once: true });
+            } else {
+                tryPlay();
+            }
+
+            window.addEventListener('pointerdown', unlock, { once: true });
+            window.addEventListener('keydown', unlock, { once: true });
+        })();
+    </script>
     <!-- Loading Screen -->
     <div id="loading">
         <h1>🌌 Solar System Loading...</h1>
@@ -553,8 +575,8 @@
         // Moon orbital data (relative to parent planet) - Larger sizes for visibility
         const MOON_DATA = {
             'Moon': { radius: 3.0, distance: 24, orbit: 27.3 },
-            'Phobos': { radius: 1.2, distance: 10, orbit: 0.32 },
-            'Deimos': { radius: 1.0, distance: 14, orbit: 1.26 },
+            'Phobos': { radius: 0.6, distance: 10, orbit: 0.32 },
+            'Deimos': { radius: 0.5, distance: 14, orbit: 1.26 },
             'Io': { radius: 3.2, distance: 56, orbit: 1.77 },
             'Europa': { radius: 3.0, distance: 70, orbit: 3.55 },
             'Ganymede': { radius: 4.5, distance: 90, orbit: 7.15 },
